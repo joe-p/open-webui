@@ -24,7 +24,12 @@ from open_webui.config import (
     IMAGE_URL_RESPONSE_MODELS_REGEX_PATTERN,
 )
 from open_webui.constants import ERROR_MESSAGES
-from open_webui.env import AIOHTTP_CLIENT_ALLOW_REDIRECTS, AIOHTTP_CLIENT_SESSION_SSL, ENABLE_FORWARD_USER_INFO_HEADERS
+from open_webui.env import (
+    AIOHTTP_CLIENT_ALLOW_REDIRECTS,
+    AIOHTTP_CLIENT_SESSION_SSL,
+    ENABLE_FORWARD_USER_INFO_HEADERS,
+    OPEN_WEBUI_USER_AGENT,
+)
 from open_webui.events import EVENTS, publish_event
 from open_webui.internal.db import get_async_session
 from open_webui.models.chats import Chats
@@ -56,6 +61,8 @@ IMAGE_CACHE_DIR = CACHE_DIR / 'image' / 'generations'
 IMAGE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 router = APIRouter()
+
+DEFAULT_HEADERS = {'User-Agent': OPEN_WEBUI_USER_AGENT}
 
 IMAGE_FILE_EXTENSIONS = {
     'image/jpeg': '.jpg',
@@ -196,7 +203,7 @@ async def set_image_model(request: Request, model: str):
             session = await get_session()
             async with session.get(
                 url=f'{image_config.AUTOMATIC1111_BASE_URL}/sdapi/v1/options',
-                headers={'authorization': api_auth},
+                headers={**DEFAULT_HEADERS, 'authorization': api_auth},
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
             ) as r:
                 options = await r.json()
@@ -205,7 +212,7 @@ async def set_image_model(request: Request, model: str):
                 async with session.post(
                     url=f'{image_config.AUTOMATIC1111_BASE_URL}/sdapi/v1/options',
                     json=options,
-                    headers={'authorization': api_auth},
+                    headers={**DEFAULT_HEADERS, 'authorization': api_auth},
                     ssl=AIOHTTP_CLIENT_SESSION_SSL,
                 ) as r:
                     r.raise_for_status()
@@ -228,7 +235,7 @@ async def get_image_model(request):
             session = await get_session()
             async with session.get(
                 url=f'{image_config.AUTOMATIC1111_BASE_URL}/sdapi/v1/options',
-                headers={'authorization': get_automatic1111_api_auth(image_config)},
+                headers={**DEFAULT_HEADERS, 'authorization': get_automatic1111_api_auth(image_config)},
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
             ) as r:
                 options = await r.json()
@@ -354,7 +361,7 @@ class ConnectionVerificationForm(BaseModel):
 @router.post('/verify')
 async def verify_connection(form_data: ConnectionVerificationForm, user=Depends(get_admin_user)):
     url = form_data.url.rstrip('/')
-    headers = {}
+    headers = dict(DEFAULT_HEADERS)
     if form_data.engine == 'automatic1111':
         url = f'{url}/sdapi/v1/options'
         if form_data.key is not None:
@@ -391,7 +398,7 @@ async def get_models(request: Request, user=Depends(get_verified_user)):
             ]
         elif image_config.IMAGE_GENERATION_ENGINE == 'comfyui':
             # TODO - get models from comfyui
-            headers = {'Authorization': f'Bearer {image_config.COMFYUI_API_KEY}'}
+            headers = {**DEFAULT_HEADERS, 'Authorization': f'Bearer {image_config.COMFYUI_API_KEY}'}
             session = await get_session()
             async with session.get(
                 url=f'{image_config.COMFYUI_BASE_URL}/object_info',
@@ -436,7 +443,7 @@ async def get_models(request: Request, user=Depends(get_verified_user)):
             session = await get_session()
             async with session.get(
                 url=f'{image_config.AUTOMATIC1111_BASE_URL}/sdapi/v1/sd-models',
-                headers={'authorization': get_automatic1111_api_auth(image_config)},
+                headers={**DEFAULT_HEADERS, 'authorization': get_automatic1111_api_auth(image_config)},
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
             ) as r:
                 models = await r.json()
@@ -492,6 +499,7 @@ def _is_same_origin(url: str, base_url: str) -> bool:
 
 
 async def get_image_data(data: str, headers=None, trusted_base_url: str | None = None):
+    headers = {**DEFAULT_HEADERS, **(headers or {})}
     try:
         if data.startswith('http://') or data.startswith('https://'):
             # Defense-in-depth: gate before fetch (mirrors load_url_image).
@@ -640,6 +648,7 @@ async def image_generations(
     try:
         if image_config.IMAGE_GENERATION_ENGINE == 'openai':
             headers = {
+                **DEFAULT_HEADERS,
                 'Authorization': f'Bearer {image_config.IMAGES_OPENAI_API_KEY}',
                 'Content-Type': 'application/json',
             }
@@ -700,6 +709,7 @@ async def image_generations(
 
         elif image_config.IMAGE_GENERATION_ENGINE == 'gemini':
             headers = {
+                **DEFAULT_HEADERS,
                 'Content-Type': 'application/json',
                 'x-goog-api-key': image_config.IMAGES_GEMINI_API_KEY,
             }
@@ -793,9 +803,9 @@ async def image_generations(
             images = []
 
             for image in res['data']:
-                headers = None
+                headers = DEFAULT_HEADERS
                 if image_config.COMFYUI_API_KEY:
-                    headers = {'Authorization': f'Bearer {image_config.COMFYUI_API_KEY}'}
+                    headers = {**DEFAULT_HEADERS, 'Authorization': f'Bearer {image_config.COMFYUI_API_KEY}'}
 
                 image_data, content_type = await get_image_data(
                     image['url'],
@@ -839,7 +849,7 @@ async def image_generations(
             async with session.post(
                 url=f'{image_config.AUTOMATIC1111_BASE_URL}/sdapi/v1/txt2img',
                 json=data,
-                headers={'authorization': get_automatic1111_api_auth(image_config)},
+                headers={**DEFAULT_HEADERS, 'authorization': get_automatic1111_api_auth(image_config)},
                 ssl=AIOHTTP_CLIENT_SESSION_SSL,
             ) as r:
                 res = await r.json(content_type=None)
@@ -957,7 +967,7 @@ async def image_edits(
                         data,
                         ssl=AIOHTTP_CLIENT_SESSION_SSL,
                         allow_redirects=AIOHTTP_CLIENT_ALLOW_REDIRECTS,
-                        headers={'Accept-Encoding': 'identity'},
+                        headers={**DEFAULT_HEADERS, 'Accept-Encoding': 'identity'},
                     ) as r:
                         r.raise_for_status()
                         assert_identity_encoding(r.headers.getall('Content-Encoding', ()))
@@ -1001,6 +1011,7 @@ async def image_edits(
     try:
         if image_config.IMAGE_EDIT_ENGINE == 'openai':
             headers = {
+                **DEFAULT_HEADERS,
                 'Authorization': f'Bearer {image_config.IMAGES_EDIT_OPENAI_API_KEY}',
             }
 
@@ -1082,6 +1093,7 @@ async def image_edits(
 
         elif image_config.IMAGE_EDIT_ENGINE == 'gemini':
             headers = {
+                **DEFAULT_HEADERS,
                 'Content-Type': 'application/json',
                 'x-goog-api-key': image_config.IMAGES_EDIT_GEMINI_API_KEY,
             }
@@ -1201,9 +1213,9 @@ async def image_edits(
             images = []
 
             for image_url in image_urls:
-                headers = None
+                headers = DEFAULT_HEADERS
                 if image_config.IMAGES_EDIT_COMFYUI_API_KEY:
-                    headers = {'Authorization': f'Bearer {image_config.IMAGES_EDIT_COMFYUI_API_KEY}'}
+                    headers = {**DEFAULT_HEADERS, 'Authorization': f'Bearer {image_config.IMAGES_EDIT_COMFYUI_API_KEY}'}
 
                 image_data, content_type = await get_image_data(
                     image_url,

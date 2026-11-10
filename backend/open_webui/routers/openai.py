@@ -29,6 +29,7 @@ from open_webui.env import (
     ENABLE_FORWARD_USER_INFO_HEADERS,
     ENABLE_OPENAI_API_PASSTHROUGH,
     MODELS_CACHE_TTL,
+    OPEN_WEBUI_USER_AGENT,
     REDIS_KEY_PREFIX,
 )
 from open_webui.events import EVENTS, publish_event, publish_model_provider_request_failed
@@ -95,6 +96,7 @@ async def send_get_request(
                 headers, cookies = await get_headers_and_cookies(request, url, key, config, user=user)
             else:
                 headers = {
+                    'User-Agent': OPEN_WEBUI_USER_AGENT,
                     **({'Authorization': f'Bearer {key}'} if key else {}),
                 }
                 cookies = None

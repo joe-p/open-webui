@@ -33,6 +33,7 @@ from open_webui.env import (
     ENABLE_RETRIEVAL_UNSCOPED_COLLECTIONS,
     MPS_INFERENCE_LOCK,
     OFFLINE_MODE,
+    OPEN_WEBUI_USER_AGENT,
     RAG_SOURCE_METADATA_KEYS,
     USE_SLIM,
 )
@@ -56,6 +57,8 @@ from open_webui.utils.headers import get_json_bearer_headers, include_user_info_
 from open_webui.utils.misc import get_content_from_message, get_message_list, strict_match_mime_type
 
 log = logging.getLogger(__name__)
+
+DEFAULT_HEADERS = {'User-Agent': OPEN_WEBUI_USER_AGENT}
 
 
 from typing import Any
@@ -898,7 +901,7 @@ def generate_openai_batch_embeddings(
     if isinstance(RAG_EMBEDDING_PREFIX_FIELD_NAME, str) and isinstance(prefix, str):
         json_data[RAG_EMBEDDING_PREFIX_FIELD_NAME] = prefix
 
-    headers = get_json_bearer_headers(key)
+    headers = {**DEFAULT_HEADERS, **get_json_bearer_headers(key)}
     if ENABLE_FORWARD_USER_INFO_HEADERS and user:
         headers = include_user_info_headers(headers, user)
 
@@ -928,7 +931,7 @@ async def agenerate_openai_batch_embeddings(
     if isinstance(RAG_EMBEDDING_PREFIX_FIELD_NAME, str) and isinstance(prefix, str):
         form_data[RAG_EMBEDDING_PREFIX_FIELD_NAME] = prefix
 
-    headers = get_json_bearer_headers(key)
+    headers = {**DEFAULT_HEADERS, **get_json_bearer_headers(key)}
     if ENABLE_FORWARD_USER_INFO_HEADERS and user:
         headers = include_user_info_headers(headers, user)
 
@@ -967,6 +970,7 @@ def generate_azure_openai_batch_embeddings(
 
     for _ in range(5):
         headers = {
+            **DEFAULT_HEADERS,
             'Content-Type': 'application/json',
             'api-key': key,
         }
@@ -1008,6 +1012,7 @@ async def agenerate_azure_openai_batch_embeddings(
     full_url = f'{url}/openai/deployments/{model}/embeddings?api-version={version}'
 
     headers = {
+        **DEFAULT_HEADERS,
         'Content-Type': 'application/json',
         'api-key': key,
     }
@@ -1044,7 +1049,7 @@ def generate_ollama_batch_embeddings(
     if isinstance(RAG_EMBEDDING_PREFIX_FIELD_NAME, str) and isinstance(prefix, str):
         json_data[RAG_EMBEDDING_PREFIX_FIELD_NAME] = prefix
 
-    headers = get_json_bearer_headers(key)
+    headers = {**DEFAULT_HEADERS, **get_json_bearer_headers(key)}
     if ENABLE_FORWARD_USER_INFO_HEADERS and user:
         headers = include_user_info_headers(headers, user)
 
@@ -1077,7 +1082,7 @@ async def agenerate_ollama_batch_embeddings(
     if isinstance(RAG_EMBEDDING_PREFIX_FIELD_NAME, str) and isinstance(prefix, str):
         form_data[RAG_EMBEDDING_PREFIX_FIELD_NAME] = prefix
 
-    headers = get_json_bearer_headers(key)
+    headers = {**DEFAULT_HEADERS, **get_json_bearer_headers(key)}
     if ENABLE_FORWARD_USER_INFO_HEADERS and user:
         headers = include_user_info_headers(headers, user)
 

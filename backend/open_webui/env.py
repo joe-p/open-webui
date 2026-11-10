@@ -144,6 +144,11 @@ else:
 
 VERSION = PACKAGE_DATA['version']
 
+# Canonical User-Agent for requests made by Open Web UI itself (chat backends,
+# image generation, etc.).  This prevents aiohttp's default "Python/3.x" from
+# being sent to upstream providers.  RFC 9110 product/version form.
+OPEN_WEBUI_USER_AGENT = f'open-webui/{VERSION} (https://github.com/open-webui/open-webui)'
+
 
 DEPLOYMENT_ID = os.getenv('DEPLOYMENT_ID', '')
 INSTANCE_ID = os.getenv('INSTANCE_ID', str(uuid4()))

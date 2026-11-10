@@ -18,7 +18,11 @@ from fastapi import (
 )
 from open_webui.config import CACHE_DIR
 from open_webui.constants import ERROR_MESSAGES
-from open_webui.env import AIOHTTP_CLIENT_SESSION_SSL, AIOHTTP_FILE_STREAM_CHUNK_SIZE
+from open_webui.env import (
+    AIOHTTP_CLIENT_SESSION_SSL,
+    AIOHTTP_FILE_STREAM_CHUNK_SIZE,
+    OPEN_WEBUI_USER_AGENT,
+)
 from open_webui.events import EVENTS, publish_event
 from open_webui.models.config import Config
 from open_webui.routers.openai import get_all_models_responses
@@ -27,6 +31,8 @@ from pydantic import BaseModel
 from starlette.responses import FileResponse
 
 log = logging.getLogger(__name__)
+
+DEFAULT_HEADERS = {'User-Agent': OPEN_WEBUI_USER_AGENT}
 
 
 # Pipeline Middleware
@@ -68,7 +74,7 @@ async def process_pipeline_inlet_filter(request, payload, user, models):
     if not sorted_filters:
         return payload
 
-    async with aiohttp.ClientSession(trust_env=True) as session:
+    async with aiohttp.ClientSession(trust_env=True, headers=DEFAULT_HEADERS) as session:
         for filter in sorted_filters:
             urlIdx = filter.get('urlIdx')
 
@@ -134,7 +140,7 @@ async def process_pipeline_outlet_filter(request, payload, user, models):
     if not sorted_filters:
         return payload
 
-    async with aiohttp.ClientSession(trust_env=True) as session:
+    async with aiohttp.ClientSession(trust_env=True, headers=DEFAULT_HEADERS) as session:
         for filter in sorted_filters:
             urlIdx = filter.get('urlIdx')
 
@@ -243,7 +249,7 @@ async def upload_pipeline(
 
         headers = {'Authorization': f'Bearer {key}'}
 
-        async with aiohttp.ClientSession(trust_env=True) as session:
+        async with aiohttp.ClientSession(trust_env=True, headers=DEFAULT_HEADERS) as session:
             form_data = aiohttp.FormData()
 
             async def pipeline_chunks():
@@ -313,7 +319,7 @@ async def add_pipeline(request: Request, form_data: AddPipelineForm, user=Depend
 
         url, key = await get_openai_connection(urlIdx)
 
-        async with aiohttp.ClientSession(trust_env=True) as session:
+        async with aiohttp.ClientSession(trust_env=True, headers=DEFAULT_HEADERS) as session:
             async with session.post(
                 f'{url}/pipelines/add',
                 headers={'Authorization': f'Bearer {key}'},
@@ -363,7 +369,7 @@ async def delete_pipeline(request: Request, form_data: DeletePipelineForm, user=
 
         url, key = await get_openai_connection(urlIdx)
 
-        async with aiohttp.ClientSession(trust_env=True) as session:
+        async with aiohttp.ClientSession(trust_env=True, headers=DEFAULT_HEADERS) as session:
             async with session.delete(
                 f'{url}/pipelines/delete',
                 headers={'Authorization': f'Bearer {key}'},
@@ -406,7 +412,7 @@ async def get_pipelines(request: Request, urlIdx: Optional[int] = None, user=Dep
     try:
         url, key = await get_openai_connection(urlIdx)
 
-        async with aiohttp.ClientSession(trust_env=True) as session:
+        async with aiohttp.ClientSession(trust_env=True, headers=DEFAULT_HEADERS) as session:
             async with session.get(
                 f'{url}/pipelines',
                 headers={'Authorization': f'Bearer {key}'},
@@ -446,7 +452,7 @@ async def get_pipeline_valves(
     try:
         url, key = await get_openai_connection(urlIdx)
 
-        async with aiohttp.ClientSession(trust_env=True) as session:
+        async with aiohttp.ClientSession(trust_env=True, headers=DEFAULT_HEADERS) as session:
             async with session.get(
                 f'{url}/{pipeline_id}/valves',
                 headers={'Authorization': f'Bearer {key}'},
@@ -493,7 +499,7 @@ async def get_pipeline_valves_spec(
     try:
         url, key = await get_openai_connection(urlIdx)
 
-        async with aiohttp.ClientSession(trust_env=True) as session:
+        async with aiohttp.ClientSession(trust_env=True, headers=DEFAULT_HEADERS) as session:
             async with session.get(
                 f'{url}/{pipeline_id}/valves/spec',
                 headers={'Authorization': f'Bearer {key}'},
@@ -534,7 +540,7 @@ async def update_pipeline_valves(
     try:
         url, key = await get_openai_connection(urlIdx)
 
-        async with aiohttp.ClientSession(trust_env=True) as session:
+        async with aiohttp.ClientSession(trust_env=True, headers=DEFAULT_HEADERS) as session:
             async with session.post(
                 f'{url}/{pipeline_id}/valves/update',
                 headers={'Authorization': f'Bearer {key}'},

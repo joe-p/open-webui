@@ -17,6 +17,7 @@ from open_webui.env import (
     FORWARD_USER_INFO_HEADER_USER_ID,
     FORWARD_USER_INFO_HEADER_USER_NAME,
     FORWARD_USER_INFO_HEADER_USER_ROLE,
+    OPEN_WEBUI_USER_AGENT,
 )
 from open_webui.models.groups import Groups
 from open_webui.utils.oauth import get_system_oauth_token
@@ -184,6 +185,7 @@ async def get_headers_and_cookies(
     cookies = getattr(request, 'cookies', {}) if config.get('forward_cookies', False) else {}
     headers = {
         'Content-Type': 'application/json',
+        'User-Agent': OPEN_WEBUI_USER_AGENT,
         **(
             {
                 # LICENSE covers this Open WebUI upstream metadata identifier.

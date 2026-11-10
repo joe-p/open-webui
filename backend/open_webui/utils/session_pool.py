@@ -33,6 +33,7 @@ from open_webui.env import (
     AIOHTTP_POOL_CONNECTIONS,
     AIOHTTP_POOL_CONNECTIONS_PER_HOST,
     AIOHTTP_POOL_DNS_TTL,
+    OPEN_WEBUI_USER_AGENT,
 )
 from open_webui.utils.misc import stream_chunks_handler
 
@@ -73,6 +74,9 @@ async def get_session() -> aiohttp.ClientSession:
             connector=connector,
             timeout=timeout,
             trust_env=True,
+            # Identify outbound requests as Open Web UI instead of aiohttp's
+            # default "Python/3.x" user agent. Per-request headers still win.
+            headers={'User-Agent': OPEN_WEBUI_USER_AGENT},
         )
         log.info(
             'Created shared aiohttp session pool (limit=%s, per_host=%s, dns_ttl=%d)',

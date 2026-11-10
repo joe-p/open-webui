@@ -4,14 +4,14 @@ import urllib.parse
 from typing import Optional
 
 import aiohttp
-from open_webui.env import AIOHTTP_CLIENT_SESSION_SSL
+from open_webui.env import AIOHTTP_CLIENT_SESSION_SSL, OPEN_WEBUI_USER_AGENT
 from open_webui.utils.json_codec import JSONCodec
 from open_webui.utils.session_pool import get_session
 from pydantic import BaseModel
 
 log = logging.getLogger(__name__)
 
-default_headers = {'User-Agent': 'Mozilla/5.0'}
+default_headers = {'User-Agent': OPEN_WEBUI_USER_AGENT}
 
 
 async def queue_prompt(prompt, client_id, base_url, api_key):
@@ -112,7 +112,7 @@ async def _ws_get_images(ws, workflow, client_id, base_url, api_key):
 
 async def comfyui_upload_image(image_file_item, base_url, api_key):
     url = f'{base_url}/api/upload/image'
-    headers = {}
+    headers = dict(default_headers)
 
     if api_key:
         headers['Authorization'] = f'Bearer {api_key}'
@@ -201,7 +201,7 @@ async def comfyui_create_image(model: str, payload: ComfyUICreateImageForm, clie
     workflow = JSONCodec.loads(payload.workflow.workflow)
     _apply_workflow_nodes(workflow, payload.workflow.nodes, model, payload)
 
-    headers = {'Authorization': f'Bearer {api_key}'}
+    headers = {**default_headers, 'Authorization': f'Bearer {api_key}'}
     session = await get_session()
 
     try:
@@ -242,7 +242,7 @@ async def comfyui_edit_image(model: str, payload: ComfyUIEditImageForm, client_i
     workflow = JSONCodec.loads(payload.workflow.workflow)
     _apply_workflow_nodes(workflow, payload.workflow.nodes, model, payload)
 
-    headers = {'Authorization': f'Bearer {api_key}'}
+    headers = {**default_headers, 'Authorization': f'Bearer {api_key}'}
     session = await get_session()
 
     try:

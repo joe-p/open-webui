@@ -5,6 +5,7 @@ from open_webui.env import (
     AIOHTTP_CLIENT_SESSION_SSL,
     AIOHTTP_CLIENT_TIMEOUT_MODEL_LIST,
     ENABLE_FORWARD_USER_INFO_HEADERS,
+    OPEN_WEBUI_USER_AGENT,
 )
 from open_webui.models.users import UserModel
 from open_webui.utils.headers import include_user_info_headers
@@ -49,6 +50,7 @@ async def get_anthropic_models(url: str, key: str, user: UserModel = None) -> di
     try:
         async with aiohttp.ClientSession(timeout=timeout, trust_env=True) as session:
             headers = {
+                'User-Agent': OPEN_WEBUI_USER_AGENT,
                 'x-api-key': key,
                 'anthropic-version': ANTHROPIC_VERSION,
             }

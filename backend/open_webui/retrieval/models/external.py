@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple
 from urllib.parse import quote
 
 import requests
-from open_webui.env import ENABLE_FORWARD_USER_INFO_HEADERS, REQUESTS_VERIFY
+from open_webui.env import ENABLE_FORWARD_USER_INFO_HEADERS, OPEN_WEBUI_USER_AGENT, REQUESTS_VERIFY
 from open_webui.retrieval.models.base_reranker import BaseReranker
 from open_webui.utils.headers import include_user_info_headers
 
@@ -38,6 +38,7 @@ class ExternalReranker(BaseReranker):
             log.info('ExternalReranker:predict:model %s', self.model)
 
             headers = {
+                'User-Agent': OPEN_WEBUI_USER_AGENT,
                 'Content-Type': 'application/json',
                 'Authorization': f'Bearer {self.api_key}',
             }
